@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>火柴人城堡对战</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 6px;
+  }
+  #game-container {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 920px;
+  }
+  h1 {
+    text-align: center;
+    color: #e0e0e0;
+    font-size: clamp(15px, 4vw, 22px);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    border-radius: 6px;
+    cursor: default;
+    background: #000;
+  }
+  #btn-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  #btn-row button {
+    padding: 12px 16px;
+    font-size: clamp(13px, 3vw, 15px);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  #btn-melee {
+    background: #3498db;
+    color: white;
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  #btn-melee:active:not(:disabled) {
+    background: #2980b9;
+    transform: scale(0.97);
+  }
+  #btn-melee:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  #btn-ranged {
+    background: #e67e22;
+    color: white;
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  #btn-ranged:active:not(:disabled) {
+    background: #d35400;
+    transform: scale(0.97);
+  }
+  #btn-ranged:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  #btn-giant {
+    background: #16a085;
+    color: white;
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  #btn-giant:active:not(:disabled) {
+    background: #138d75;
+    transform: scale(0.97);
+  }
+  #btn-giant:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  #btn-miner {
+    background: #d4a017;
+    color: #1a1a2e;
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  #btn-miner:active:not(:disabled) {
+    background: #b8860b;
+    transform: scale(0.97);
+  }
+  #btn-miner:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  @media (hover: hover) {
+    #btn-miner:hover:not(:disabled) {
+      background: #b8860b;
+      transform: translateY(-1px);
+    }
+  }
+  @media (hover: hover) {
+    #btn-giant:hover:not(:disabled) {
+      background: #138d75;
+      transform: translateY(-1px);
+    }
+  }
+  #btn-restart {
+    background: #27ae60;
+    color: white;
+    display: none;
+    flex: 1 1 100%;
+  }
+  #btn-quit {
+    background: #c0392b;
+    color: white;
+    display: none;
+    flex: 1 1 100%;
+  }
+  #btn-quit:active {
+    background: #96281b;
+    transform: scale(0.97);
+  }
+  #btn-quit.show {
+    display: inline-block;
+  }
+  @media (hover: hover) {
+    #btn-quit:hover { background: #96281b; }
+  }
+  #btn-restart:active {
+    background: #219a52;
+    transform: scale(0.97);
+  }
+  #btn-restart.show {
+    display: inline-block;
+  }
+  #legend {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    color: #aaa;
+    font-size: clamp(9px, 2.2vw, 13px);
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-sq {
+    width: 12px; height: 12px;
+    background: #3498db;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .legend-ci {
+    width: 12px; height: 12px;
+    background: #e67e22;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-red {
+    width: 12px; height: 12px;
+    background: #e74c3c;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .legend-pk {
+    width: 12px; height: 12px;
+    background: #c0392b;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-tri {
+    width: 0; height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 13px solid #16a085;
+    flex-shrink: 0;
+  }
+  .legend-tri-red {
+    width: 0; height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 13px solid #8e0000;
+    flex-shrink: 0;
+  }
+  .legend-dia {
+    width: 12px; height: 12px;
+    background: #f1c40f;
+    transform: rotate(45deg);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+  .legend-dia-red {
+    width: 12px; height: 12px;
+    background: #e67e22;
+    transform: rotate(45deg);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  /* 难度选择行 */
+  #diff-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  #diff-row span {
+    color: #aaa;
+    font-size: clamp(11px, 2.5vw, 14px);
+    white-space: nowrap;
+  }
+  .diff-btn {
+    padding: 6px 14px;
+    font-size: clamp(11px, 2.5vw, 13px);
+    border: 2px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: #aaa;
+    font-weight: bold;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 36px;
+    white-space: nowrap;
+  }
+  .diff-btn.active {
+    border-color: #f1c40f;
+    color: #f1c40f;
+    background: rgba(241,196,15,0.1);
+  }
+  .diff-btn:active {
+    transform: scale(0.95);
+  }
+  @media (hover: hover) {
+    .diff-btn:hover { border-color: #f1c40f; color: #f1c40f; }
+  }
+
+  /* 暂停按钮 */
+  #btn-pause {
+    background: #8e44ad;
+    color: white;
+    flex: 0 0 auto;
+    min-width: 60px;
+  }
+  #btn-pause:active {
+    background: #7d3c98;
+    transform: scale(0.97);
+  }
+  #btn-pause.paused {
+    background: #f39c12;
+    color: #1a1a2e;
+  }
+  @media (hover: hover) {
+    #btn-pause:hover { background: #7d3c98; }
+    #btn-pause.paused:hover { background: #e67e22; }
+  }
+
+  /* 开始按钮 */
+  #btn-start {
+    background: #e74c3c;
+    color: white;
+    flex: 1 1 100%;
+    font-size: clamp(15px, 3.5vw, 18px) !important;
+    padding: 14px 24px !important;
+    letter-spacing: 3px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(231,76,60,0.4); }
+    50% { box-shadow: 0 0 24px rgba(231,76,60,0.8); }
+  }
+  #btn-start:active {
+    background: #c0392b;
+    transform: scale(0.97);
+  }
+  @media (hover: hover) {
+    #btn-start:hover { background: #c0392b; transform: translateY(-2px); }
+  }
+
+  /* 游戏未开始/结束 隐藏操作按钮 */
+  .btn-game { display: none; }
+  .btn-game.show { display: inline-block; }
+
+  /* 手机竖屏优化 */
+  @media (max-width: 500px) {
+    #game-container {
+      padding: 6px;
+      border-radius: 8px;
+    }
+    h1 {
+      margin-bottom: 4px;
+    }
+    #btn-row {
+      gap: 6px;
+      margin-top: 6px;
+    }
+    #btn-row button {
+      padding: 10px 12px;
+      min-height: 40px;
+    }
+    #legend {
+      gap: 6px;
+      margin-top: 5px;
+    }
+  }
+
+  /* 超小屏幕：按钮竖排 */
+  @media (max-width: 380px) {
+    #btn-row button {
+      flex: 1 1 100% !important;
+      min-width: 0;
+    }
+  }
+
+  /* 桌面端 hover 效果（仅支持 hover 的设备） */
+  @media (hover: hover) {
+    #btn-melee:hover:not(:disabled) {
+      background: #2980b9;
+      transform: translateY(-1px);
+    }
+    #btn-ranged:hover:not(:disabled) {
+      background: #d35400;
+      transform: translateY(-1px);
+    }
+    #btn-restart:hover {
+      background: #219a52;
+      transform: translateY(-1px);
+    }
+  }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <h1>火柴人城堡对战</h1>
+  <div id="diff-row">
+    <span>难度：</span>
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">平衡</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <canvas id="canvas" width="900" height="500"></canvas>
+  <div id="btn-row">
+    <button id="btn-start">⚔ 开始游戏</button>
+    <button id="btn-melee" class="btn-game">⚔ 释放近战 (1能量)</button>
+    <button id="btn-ranged" class="btn-game">🏹 释放远程 (1.5能量)</button>
+    <button id="btn-giant" class="btn-game">👊 释放巨人 (3能量)</button>
+    <button id="btn-miner" class="btn-game">⛏ 释放矿工 (1能量)</button>
+    <button id="btn-pause" class="btn-game">⏯ 暂停</button>
+    <button id="btn-quit">🚪 退出游戏</button>
+    <button id="btn-restart">🔄 重新开始</button>
+  </div>
+  <div id="legend">
+    <span class="legend-item"><span class="legend-sq"></span> 玩家近战(方形)</span>
+    <span class="legend-item"><span class="legend-ci"></span> 玩家远程(圆形)</span>
+    <span class="legend-item"><span class="legend-red"></span> 人机近战(方形)</span>
+    <span class="legend-item"><span class="legend-pk"></span> 人机远程(圆形)</span>
+    <span class="legend-item"><span class="legend-tri"></span> 玩家巨人(三角)</span>
+    <span class="legend-item"><span class="legend-tri-red"></span> 人机巨人(三角)</span>
+    <span class="legend-item"><span class="legend-dia"></span> 玩家矿工(菱形)</span>
+    <span class="legend-item"><span class="legend-dia-red"></span> 人机矿工(菱形)</span>
+  </div>
+</div>
+
+<script>
+// ==================== DOM 元素 ====================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const btnMelee = document.getElementById('btn-melee');
+const btnRanged = document.getElementById('btn-ranged');
+const btnStart = document.getElementById('btn-start');
+const btnPause = document.getElementById('btn-pause');
+const btnRestart = document.getElementById('btn-restart');
+const btnQuit = document.getElementById('btn-quit');
+const btnGiant = document.getElementById('btn-giant');
+const btnMiner = document.getElementById('btn-miner');
+const diffBtns = document.querySelectorAll('.diff-btn');
+const gameBtns = document.querySelectorAll('.btn-game');
+const spawnBtns = () => [btnMelee, btnRanged, btnGiant, btnMiner];
+
+// ==================== 游戏常量 ====================
+const W = canvas.width;
+const H = canvas.height;
+const GROUND_Y = 400;
+const MAX_CASTLE_HP = 100;
+const MAX_ENERGY = 10;
+const ENERGY_REGEN = 0.5;
+const MELEE_COST = 1;
+const RANGED_COST = 1.5;
+const GIANT_COST = 3;
+const MINER_COST = 1;
+
+// 矿石位置
+const PLAYER_ORE_X = 158;
+const AI_ORE_X = 742;
+const ORE_Y = 385;
+
+// 玩家城堡位置 (左侧)
+const PLAYER_CASTLE_X = 65;
+// 人机城堡位置 (右侧)
+const AI_CASTLE_X = 835;
+// 城堡宽度
+const CASTLE_W = 90;
+
+// 火柴人属性 (速度已降低，节奏更舒适)
+const STATS = {
+  melee:  { hp: 10, atk: 2,   speed: 72, range: 40,  cooldown: 0.9,  aoeRadius: 0,  name: '近战' },
+  ranged: { hp: 10, atk: 1,   speed: 48, range: 180, cooldown: 1.4,  aoeRadius: 0,  name: '远程' },
+  giant:  { hp: 30, atk: 1,   speed: 58, range: 50,  cooldown: 1.8,  aoeRadius: 65, name: '巨人' },
+  miner:  { hp: 10, atk: 0,   speed: 55, range: 0,   cooldown: 999, aoeRadius: 0,  name: '矿工' }
+};
+
+// ==================== 难度配置 ====================
+const DIFFICULTY = {
+  easy:   { aiSpawnMin: 2.2, aiSpawnMax: 3.5, aiEnergyRegen: 0.55, label: '简单' },
+  normal: { aiSpawnMin: 1.2, aiSpawnMax: 2.2, aiEnergyRegen: 0.72, label: '平衡' },
+  hard:   { aiSpawnMin: 0.4, aiSpawnMax: 1.0, aiEnergyRegen: 0.95, label: '困难' }
+};
+
+// AI 各难度出兵权重: [melee, ranged, giant, miner]
+const AI_SPAWN_WEIGHTS = {
+  easy:   [0.40, 0.30, 0.10, 0.20],
+  normal: [0.26, 0.32, 0.20, 0.22],
+  hard:   [0.12, 0.36, 0.30, 0.22]
+};
+
+// ==================== 游戏状态 ====================
+let playerHP, aiHP, playerEnergy, aiEnergy;
+let stickmen, attackEffects;
+let gameOver, winner, paused, gameStarted;
+let gameTime, aiSpawnTimer, lastTime;
+let difficulty = 'normal'; // 当前难度
+let aiEnergyRegen = DIFFICULTY.normal.aiEnergyRegen;
+let aiSpawnMin = DIFFICULTY.normal.aiSpawnMin;
+let aiSpawnMax = DIFFICULTY.normal.aiSpawnMax;
+
+// ==================== 火柴人类 ====================
+class Stickman {
+  constructor(x, y, team, type) {
+    this.x = x;
+    this.y = y;
+    this.team = team;        // 'player' | 'ai'
+    this.type = type;        // 'melee' | 'ranged'
+    const s = STATS[type];
+    this.maxHp = s.hp;
+    this.hp = s.hp;
+    this.atk = s.atk;
+    this.speed = s.speed;
+    this.range = s.range;
+    this.cooldown = s.cooldown;
+    this.aoeRadius = s.aoeRadius || 0;
+    this.lastAttackTime = -999;
+    this.walkCycle = Math.random() * Math.PI * 2;
+    this.state = 'moving';   // 'moving' | 'fighting' | 'attackingCastle'
+    this.flashTimer = 0;     // 受伤闪烁
+  }
+}
+
+// ==================== 攻击特效类 ====================
+class AttackEffect {
+  constructor(x1, y1, x2, y2, color, isRanged, isAOE = false, aoeRadius = 0) {
+    this.x1 = x1;
+    this.y1 = y1;
+    this.x2 = x2;
+    this.y2 = y2;
+    this.life = 0.25;
+    this.maxLife = 0.25;
+    this.color = color;
+    this.isRanged = isRanged;
+    this.isAOE = isAOE;
+    this.aoeRadius = aoeRadius;
+  }
+}
+
+// ==================== 初始化 / 重置 ====================
+function resetGame() {
+  playerHP = MAX_CASTLE_HP;
+  aiHP = MAX_CASTLE_HP;
+  playerEnergy = MAX_ENERGY;
+  aiEnergy = MAX_ENERGY;
+  stickmen = [];
+  attackEffects = [];
+  gameOver = false;
+  winner = null;
+  paused = false;
+  gameStarted = false;
+  gameTime = 0;
+  lastTime = 0;
+  aiSpawnTimer = aiSpawnMin + Math.random() * (aiSpawnMax - aiSpawnMin);
+  btnRestart.classList.remove('show');
+  btnPause.textContent = '⏯ 暂停';
+  btnPause.classList.remove('paused');
+  btnStart.style.display = 'inline-block';
+  gameBtns.forEach(b => b.classList.remove('show'));
+  btnQuit.classList.remove('show');
+  updateButtons();
+}
+
+function startGame() {
+  gameStarted = true;
+  paused = false;
+  lastTime = performance.now();
+  btnStart.style.display = 'none';
+  gameBtns.forEach(b => b.classList.add('show'));
+  btnQuit.classList.remove('show');
+  btnPause.textContent = '⏯ 暂停';
+  btnPause.classList.remove('paused');
+  updateButtons();
+}
+
+// ==================== 辅助函数 ====================
+function distance(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function findNearestEnemy(s) {
+  let nearest = null;
+  let minDist = Infinity;
+  for (const other of stickmen) {
+    if (other === s || other.team === s.team || other.hp <= 0) continue;
+    const d = distance(s, other);
+    if (d < minDist) { minDist = d; nearest = other; }
+  }
+  return nearest;
+}
+
+function updateButtons() {
+  const blocked = gameOver || paused || !gameStarted;
+  btnMelee.disabled = blocked || playerEnergy < MELEE_COST;
+  btnRanged.disabled = blocked || playerEnergy < RANGED_COST;
+  btnGiant.disabled = blocked || playerEnergy < GIANT_COST;
+  btnMiner.disabled = blocked || playerEnergy < MINER_COST;
+  btnMelee.textContent = `⚔ 释放近战 (${MELEE_COST}能量)`;
+  btnRanged.textContent = `🏹 释放远程 (${RANGED_COST}能量)`;
+  btnGiant.textContent = `👊 释放巨人 (${GIANT_COST}能量)`;
+  btnMiner.textContent = `⛏ 释放矿工 (${MINER_COST}能量)`;
+}
+
+// ==================== 生成火柴人 ====================
+function spawnStickman(team, type) {
+  const spawnY = GROUND_Y - 8;
+  let spawnX;
+  const costMap = { melee: MELEE_COST, ranged: RANGED_COST, giant: GIANT_COST, miner: MINER_COST };
+  const cost = costMap[type] || MELEE_COST;
+  if (team === 'player') {
+    spawnX = PLAYER_CASTLE_X + 65;
+    playerEnergy -= cost;
+  } else {
+    spawnX = AI_CASTLE_X - 65;
+    aiEnergy -= cost;
+  }
+  stickmen.push(new Stickman(spawnX, spawnY, team, type));
+}
+
+// ==================== AI 逻辑 ====================
+function aiTrySpawn() {
+  if (gameOver) return;
+
+  const canMelee = aiEnergy >= MELEE_COST;
+  const canRanged = aiEnergy >= RANGED_COST;
+  const canGiant = aiEnergy >= GIANT_COST;
+  const canMiner = aiEnergy >= MINER_COST;
+  if (!canMelee && !canRanged && !canGiant && !canMiner) return;
+
+  // 按难度权重随机选择兵种
+  const weights = AI_SPAWN_WEIGHTS[difficulty];
+  const avail = [];
+  if (canMelee)  avail.push({ type: 'melee',  w: weights[0] });
+  if (canRanged) avail.push({ type: 'ranged', w: weights[1] });
+  if (canGiant)  avail.push({ type: 'giant',  w: weights[2] });
+  if (canMiner)  avail.push({ type: 'miner',  w: weights[3] });
+
+  const totalW = avail.reduce((s, a) => s + a.w, 0);
+  let r = Math.random() * totalW;
+  for (const a of avail) {
+    r -= a.w;
+    if (r <= 0) { spawnStickman('ai', a.type); return; }
+  }
+  spawnStickman('ai', avail[avail.length - 1].type);
+}
+
+// ==================== 更新逻辑 ====================
+function update(dt) {
+  if (gameOver) return;
+  if (!gameStarted) return;
+
+  // 暂停时只更新时间戳防止跳帧，不更新游戏逻辑
+  if (paused) {
+    lastTime = performance.now();
+    return;
+  }
+
+  gameTime += dt;
+
+  // 能量不再自然恢复，只能靠矿工挖矿
+
+  // AI 生成计时 (按难度)
+  aiSpawnTimer -= dt;
+  if (aiSpawnTimer <= 0) {
+    aiTrySpawn();
+    aiSpawnTimer = aiSpawnMin + Math.random() * (aiSpawnMax - aiSpawnMin);
+  }
+
+  // 更新攻击特效
+  for (const e of attackEffects) e.life -= dt;
+  attackEffects = attackEffects.filter(e => e.life > 0);
+
+  // 更新火柴人
+  for (const s of stickmen) {
+    if (s.hp <= 0) continue;
+    s.flashTimer = Math.max(0, s.flashTimer - dt);
+
+    // 矿工：移动到矿石旁挖矿，不参与战斗
+    if (s.type === 'miner') {
+      const oreX = s.team === 'player' ? PLAYER_ORE_X : AI_ORE_X;
+      const distToOre = Math.abs(s.x - oreX);
+      if (distToOre > 14) {
+        s.state = 'moving';
+        const dir = s.x < oreX ? 1 : -1;
+        s.x += dir * s.speed * dt;
+        s.walkCycle += dt * 6;
+      } else {
+        s.state = 'mining';
+        s.walkCycle += dt * 2; // 缓慢摆动（挖矿动画）
+        const teamEnergy = s.team === 'player' ? playerEnergy : aiEnergy;
+        if (teamEnergy < MAX_ENERGY) {
+          const gain = 0.1 * dt;
+          if (s.team === 'player') {
+            playerEnergy = Math.min(MAX_ENERGY, playerEnergy + gain);
+          } else {
+            aiEnergy = Math.min(MAX_ENERGY, aiEnergy + gain);
+          }
+        }
+      }
+      continue;
+    }
+
+    const enemy = findNearestEnemy(s);
+    const towardCastle = s.team === 'player';
+    const castleX = towardCastle ? AI_CASTLE_X : PLAYER_CASTLE_X;
+    const atCastle = towardCastle ? (s.x >= castleX - 30) : (s.x <= castleX + 30);
+
+    if (enemy && distance(s, enemy) <= s.range) {
+      // 有敌人在攻击范围内 → 战斗
+      s.state = 'fighting';
+      if (gameTime - s.lastAttackTime >= s.cooldown) {
+        s.lastAttackTime = gameTime;
+        const teamColor = s.team === 'player' ? '#5dade2' : '#e74c3c';
+        const midY = s.y - 20;
+
+        if (s.aoeRadius > 0) {
+          // 巨人AOE范围伤害：攻击范围内所有敌人
+          let hitCount = 0;
+          for (const other of stickmen) {
+            if (other.team !== s.team && other.hp > 0 && distance(s, other) <= s.aoeRadius) {
+              other.hp -= s.atk;
+              other.flashTimer = 0.15;
+              hitCount++;
+            }
+          }
+          // AOE冲击波特效
+          if (hitCount > 0) {
+            attackEffects.push(new AttackEffect(
+              s.x, midY, s.x, midY,
+              teamColor, false, true, s.aoeRadius
+            ));
+          }
+        } else {
+          // 普通单体攻击
+          enemy.hp -= s.atk;
+          enemy.flashTimer = 0.15;
+          attackEffects.push(new AttackEffect(
+            s.x, midY, enemy.x, enemy.y - 20,
+            teamColor, s.type === 'ranged'
+          ));
+        }
+      }
+    } else if (atCastle) {
+      // 到达敌方城堡 → 攻击城堡
+      s.state = 'attackingCastle';
+      if (gameTime - s.lastAttackTime >= s.cooldown) {
+        if (s.team === 'player') {
+          aiHP -= s.atk;
+        } else {
+          playerHP -= s.atk;
+        }
+        s.lastAttackTime = gameTime;
+        const tx = s.team === 'player' ? AI_CASTLE_X : PLAYER_CASTLE_X;
+        attackEffects.push(new AttackEffect(
+          s.x, s.y - 20, tx, GROUND_Y - 50,
+          s.team === 'player' ? '#5dade2' : '#e74c3c',
+          false
+        ));
+      }
+    } else {
+      // 向敌方城堡移动
+      s.state = 'moving';
+      const dir = s.team === 'player' ? 1 : -1;
+      s.x += dir * s.speed * dt;
+      s.walkCycle += dt * 8;
+    }
+  }
+
+  // 移除死亡火柴人
+  stickmen = stickmen.filter(s => s.hp > 0);
+
+  // 更新按钮状态
+  updateButtons();
+
+  // 检测胜负
+  if (playerHP <= 0) {
+    playerHP = 0;
+    gameOver = true;
+    winner = '人机';
+    gameBtns.forEach(b => b.classList.remove('show'));
+    btnQuit.classList.remove('show');
+    btnRestart.classList.add('show');
+  } else if (aiHP <= 0) {
+    aiHP = 0;
+    gameOver = true;
+    winner = '玩家';
+    gameBtns.forEach(b => b.classList.remove('show'));
+    btnQuit.classList.remove('show');
+    btnRestart.classList.add('show');
+  }
+}
+
+// ==================== 渲染函数 ====================
+
+/** 绘制天空和地面 */
+function drawBackground() {
+  // 天空渐变
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  skyGrad.addColorStop(0, '#1a1a3e');
+  skyGrad.addColorStop(0.5, '#2d3a6e');
+  skyGrad.addColorStop(1, '#4a6fa5');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, GROUND_Y);
+
+  // 星星
+  ctx.fillStyle = '#ffffff';
+  const starSeeds = [23,67,112,189,234,312,398,456,521,589,634,701,768,812,877];
+  for (const sx of starSeeds) {
+    const sy = 15 + (sx * 37) % 120;
+    const r = 0.5 + (sx % 3) * 0.5;
+    ctx.globalAlpha = 0.4 + (sx % 5) * 0.12;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // 月亮
+  ctx.fillStyle = '#ffeaa7';
+  ctx.beginPath();
+  ctx.arc(780, 50, 28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2d3a6e';
+  ctx.beginPath();
+  ctx.arc(792, 42, 24, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 远山
+  ctx.fillStyle = '#1e2d4a';
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  for (let x = 0; x <= W; x += 40) {
+    ctx.lineTo(x, GROUND_Y - 15 - Math.sin(x * 0.008) * 20 - Math.sin(x * 0.02) * 10);
+  }
+  ctx.lineTo(W, GROUND_Y);
+  ctx.closePath();
+  ctx.fill();
+
+  // 地面
+  const groundGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+  groundGrad.addColorStop(0, '#3d5a3c');
+  groundGrad.addColorStop(0.3, '#2e4a2d');
+  groundGrad.addColorStop(1, '#1a2e1a');
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+  // 地面线
+  ctx.strokeStyle = '#5a8a4a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y);
+  ctx.lineTo(W, GROUND_Y);
+  ctx.stroke();
+}
+
+/** 绘制城堡 */
+function drawCastle(cx, team) {
+  const bw = CASTLE_W;
+  const bh = 90;
+  const bx = cx - bw / 2;
+  const by = GROUND_Y - bh;
+
+  // 城堡阴影
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(bx + 4, by + 4, bw, bh);
+
+  // 主体
+  const bodyGrad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  bodyGrad.addColorStop(0, '#7a7a7a');
+  bodyGrad.addColorStop(0.3, '#999');
+  bodyGrad.addColorStop(0.7, '#888');
+  bodyGrad.addColorStop(1, '#6a6a6a');
+  ctx.fillStyle = bodyGrad;
+  ctx.fillRect(bx, by, bw, bh);
+
+  // 砖纹
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 0.5;
+  for (let row = 0; row < 6; row++) {
+    const ry = by + row * 15;
+    ctx.beginPath();
+    ctx.moveTo(bx, ry);
+    ctx.lineTo(bx + bw, ry);
+    ctx.stroke();
+    const off = row % 2 === 0 ? 0 : 11;
+    for (let col = off; col < bw; col += 22) {
+      ctx.beginPath();
+      ctx.moveTo(bx + col, ry);
+      ctx.lineTo(bx + col, ry + 15);
+      ctx.stroke();
+    }
+  }
+
+  // 城垛
+  const merlonW = bw / 5;
+  const merlonH = 14;
+  for (let i = 0; i < 5; i++) {
+    const mx = bx + i * merlonW;
+    ctx.fillStyle = '#888';
+    ctx.fillRect(mx + 1, by - merlonH, merlonW - 2, merlonH);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(mx + 1, by - merlonH, merlonW - 2, merlonH);
+  }
+
+  // 城门
+  const doorW = 16;
+  const doorH = 30;
+  const doorX = cx - doorW / 2;
+  const doorY = GROUND_Y - doorH;
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(doorX, doorY, doorW, doorH);
+  ctx.strokeStyle = '#2a1a0a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(doorX, doorY, doorW, doorH);
+  // 门拱
+  ctx.fillStyle = '#3a2a1a';
+  ctx.beginPath();
+  ctx.arc(cx, doorY, doorW / 2, Math.PI, 0);
+  ctx.fill();
+  ctx.strokeStyle = '#2a1a0a';
+  ctx.beginPath();
+  ctx.arc(cx, doorY, doorW / 2, Math.PI, 0);
+  ctx.stroke();
+
+  // 窗户
+  for (let wy = by + 18; wy < by + 55; wy += 22) {
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(cx - 14, wy, 5, 7);
+    ctx.fillRect(cx + 9, wy, 5, 7);
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(cx - 14, wy, 5, 7);
+    ctx.strokeRect(cx + 9, wy, 5, 7);
+  }
+
+  // 旗杆和旗帜
+  const flagColor = team === 'player' ? '#3498db' : '#e74c3c';
+  const flagX = cx;
+  const flagTop = by - merlonH - 32;
+  ctx.strokeStyle = '#5a4a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(flagX, flagTop + 30);
+  ctx.lineTo(flagX, flagTop);
+  ctx.stroke();
+
+  ctx.fillStyle = flagColor;
+  ctx.beginPath();
+  ctx.moveTo(flagX + 1, flagTop);
+  ctx.lineTo(flagX + 22, flagTop + 8);
+  ctx.lineTo(flagX + 1, flagTop + 16);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** 绘制单个火柴人 */
+function drawStickman(s) {
+  if (s.hp <= 0) return;
+
+  ctx.save();
+  ctx.translate(s.x, s.y);
+
+  // 人机火柴人面向左
+  const isGiant = s.type === 'giant';
+  const isMiner = s.type === 'miner';
+  const facingRight = s.team === 'player';
+  if (!facingRight) ctx.scale(-1, 1);
+  if (isGiant) ctx.scale(1.35, 1.35);
+
+  const teamColor = isMiner
+    ? (s.team === 'player' ? '#f1c40f' : '#e67e22')
+    : isGiant
+    ? (s.team === 'player' ? '#1abc9c' : '#c0392b')
+    : (s.team === 'player' ? '#3498db' : '#e74c3c');
+  const lightColor = isMiner
+    ? (s.team === 'player' ? '#f9e076' : '#f0b040')
+    : isGiant
+    ? (s.team === 'player' ? '#48d1b5' : '#e74c3c')
+    : (s.team === 'player' ? '#5dade2' : '#f1948a');
+  const darkColor = isMiner
+    ? (s.team === 'player' ? '#b8860b' : '#c0651f')
+    : isGiant
+    ? (s.team === 'player' ? '#148f77' : '#8e0000')
+    : (s.team === 'player' ? '#2471a3' : '#c0392b');
+
+  // 受伤闪烁
+  if (s.flashTimer > 0 && Math.floor(s.flashTimer * 30) % 2 === 0) {
+    ctx.globalAlpha = 0.5;
+  }
+
+  const wc = s.state === 'moving' ? s.walkCycle : 0;
+  const isAttacking = s.state === 'fighting' || s.state === 'attackingCastle';
+
+  // --- 腿 ---
+  ctx.strokeStyle = teamColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  const legSwing = Math.sin(wc) * 6;
+  // 左腿
+  ctx.beginPath();
+  ctx.moveTo(-3, -12);
+  ctx.lineTo(-6 - legSwing, 0);
+  ctx.stroke();
+  // 右腿
+  ctx.beginPath();
+  ctx.moveTo(3, -12);
+  ctx.lineTo(6 + legSwing, 0);
+  ctx.stroke();
+
+  // --- 身体 (区分近战方形 / 远程圆形 / 巨人三角 / 矿工菱形) ---
+  if (s.type === 'miner') {
+    // 菱形身体
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.moveTo(0, -27);
+    ctx.lineTo(-9, -18);
+    ctx.lineTo(0, -9);
+    ctx.lineTo(9, -18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // 小十字镐
+    ctx.strokeStyle = '#8b6914';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(8, -12);
+    ctx.lineTo(16, -8);
+    ctx.stroke();
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(17, -9, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#888';
+    ctx.beginPath();
+    ctx.arc(12, -6, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (s.type === 'giant') {
+    // 三角形身体 (倒三角，象征强壮躯干)
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.moveTo(0, -27);
+    ctx.lineTo(-11, -9);
+    ctx.lineTo(11, -9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else if (s.type === 'melee') {
+    // 方形身体
+    ctx.fillStyle = teamColor;
+    ctx.fillRect(-7, -25, 14, 14);
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-7, -25, 14, 14);
+  } else {
+    // 圆形身体
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.arc(0, -18, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -18, 8.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // --- 手臂 ---
+  const armSwing = Math.sin(wc + Math.PI) * 4;
+  ctx.strokeStyle = teamColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+
+  if (isAttacking) {
+    // 攻击姿态：前臂向前伸出
+    ctx.beginPath();
+    ctx.moveTo(0, -21);
+    ctx.lineTo(16, -15);
+    ctx.stroke();
+    // 武器效果
+    ctx.strokeStyle = lightColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(16, -15);
+    ctx.lineTo(22, -12);
+    ctx.stroke();
+    // 后臂
+    ctx.strokeStyle = teamColor;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -21);
+    ctx.lineTo(-10, -26);
+    ctx.stroke();
+  } else {
+    // 行走摆臂
+    ctx.beginPath();
+    ctx.moveTo(0, -21);
+    ctx.lineTo(-9 + armSwing, -16);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -21);
+    ctx.lineTo(9 - armSwing, -16);
+    ctx.stroke();
+  }
+
+  // --- 头部 ---
+  ctx.fillStyle = teamColor;
+  ctx.beginPath();
+  ctx.arc(0, -32, 6.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = darkColor;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(0, -32, 6.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 眼睛
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(2, -33.5, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(2.8, -33.5, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // --- HP 条 (在火柴人上方, 不受翻转影响) ---
+  if (s.hp < s.maxHp) {
+    const barW = 26;
+    const barH = 3;
+    const barX = s.x - barW / 2;
+    const barY = s.y - 44;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(barX, barY, barW * (s.hp / s.maxHp), barH);
+  }
+}
+
+/** 绘制攻击特效 */
+function drawAttackEffects() {
+  for (const e of attackEffects) {
+    const alpha = e.life / e.maxLife;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    if (e.isRanged) {
+      // 远程：虚线弹道 + 小圆点
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(e.x1, e.y1);
+      ctx.lineTo(e.x2, e.y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 弹丸
+      const t = 1 - alpha;
+      const px = e.x1 + (e.x2 - e.x1) * (1 - t);
+      const py = e.y1 + (e.y2 - e.y1) * (1 - t);
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (e.isAOE) {
+      // AOE冲击波：扩散圆环
+      const progress = 1 - alpha;
+      const r = e.aoeRadius * (0.5 + progress * 0.5);
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 3 * (1 - progress);
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(e.x1, e.y1, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    } else {
+      // 近战：闪光斜线
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(e.x1, e.y1);
+      ctx.lineTo(e.x2, e.y2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+}
+
+/** 绘制 HUD */
+function drawHUD() {
+  const barW = 180;
+  const barH = 14;
+  const barY1 = 18;
+  const barY2 = 38;
+  const pad = 16;
+
+  // 玩家城堡标签
+  ctx.fillStyle = '#3498db';
+  ctx.font = 'bold 13px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('🏰 玩家城堡', pad, barY1 - 5);
+
+  // 玩家 HP 条
+  drawBar(pad, barY1, barW, barH, playerHP / MAX_CASTLE_HP, '#e74c3c', '#2ecc71');
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Microsoft YaHei", sans-serif';
+  ctx.fillText(`HP: ${Math.ceil(playerHP)}/${MAX_CASTLE_HP}`, pad + barW + 8, barY1 + 11);
+
+  // 玩家能量条
+  ctx.fillStyle = '#3498db';
+  ctx.font = '12px "Microsoft YaHei", sans-serif';
+  ctx.fillText('⚡', pad, barY2 - 1);
+  drawBar(pad + 16, barY2, barW - 16, barH, playerEnergy / MAX_ENERGY, '#555', '#f1c40f');
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Microsoft YaHei", sans-serif';
+  ctx.fillText(`能量: ${playerEnergy.toFixed(1)}/${MAX_ENERGY}`, pad + barW + 8, barY2 + 11);
+
+  // 人机城堡标签
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = 'bold 13px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('人机城堡 🏰', W - pad, barY1 - 5);
+
+  // 人机 HP 条
+  const rBarX = W - pad - barW;
+  drawBar(rBarX, barY1, barW, barH, aiHP / MAX_CASTLE_HP, '#e74c3c', '#2ecc71');
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`HP: ${Math.ceil(aiHP)}/${MAX_CASTLE_HP}`, rBarX - 8, barY1 + 11);
+
+  // 人机能量条
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = '12px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('⚡', W - pad, barY2 - 1);
+  drawBar(rBarX + 16, barY2, barW - 16, barH, aiEnergy / MAX_ENERGY, '#555', '#f1c40f');
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`能量: ${aiEnergy.toFixed(1)}/${MAX_ENERGY}`, rBarX - 8, barY2 + 11);
+
+  ctx.textAlign = 'left';
+}
+
+/** 绘制单个进度条 */
+function drawBar(x, y, w, h, ratio, bgColor, fgColor) {
+  // 背景
+  ctx.fillStyle = '#222';
+  ctx.fillRect(x, y, w, h);
+  // 填充
+  const fillW = Math.max(0, w * ratio);
+  if (fillW > 0) {
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, fgColor);
+    grad.addColorStop(1, bgColor);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, fillW, h);
+  }
+  // 边框
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, w, h);
+}
+
+/** 绘制矿石 */
+function drawOre(ox, oy) {
+  // 矿堆
+  const rocks = [
+    [0, -8, 10], [9, -4, 7], [-9, -3, 8],
+    [5, 2, 6], [-6, 3, 7], [0, 0, 9],
+    [8, 6, 5], [-8, 5, 6]
+  ];
+  for (const [rx, ry, rr] of rocks) {
+    const grad = ctx.createLinearGradient(ox + rx - rr, oy + ry - rr, ox + rx + rr, oy + ry + rr);
+    grad.addColorStop(0, '#f9e076');
+    grad.addColorStop(0.4, '#d4a017');
+    grad.addColorStop(1, '#8b6914');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(ox + rx, oy + ry, rr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // ∞ 标记
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('∞', ox, oy - 20);
+  ctx.textAlign = 'left';
+}
+
+/** 绘制战场分界线 */
+function drawBattlefieldMarkers() {
+  // 中路标记
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(W / 2 - 1, GROUND_Y + 2, 2, H - GROUND_Y - 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath();
+  ctx.arc(W / 2, GROUND_Y + 20, 4, 0, Math.PI);
+  ctx.fill();
+}
+
+/** 绘制开始画面 */
+function drawStartScreen() {
+  if (gameStarted || gameOver) return;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+
+  const panelW = 360;
+  const panelH = 180;
+  const panelX = W / 2 - panelW / 2;
+  const panelY = H / 2 - panelH / 2 - 20;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(panelX, panelY, panelW, panelH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 26px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🏰 火柴人城堡对战', W / 2, panelY + 45);
+
+  ctx.fillStyle = '#ccc';
+  ctx.font = '15px "Microsoft YaHei", sans-serif';
+  ctx.fillText('选择难度后点击下方按钮开始', W / 2, panelY + 80);
+
+  // 难度提示
+  const diffLabel = DIFFICULTY[difficulty].label;
+  ctx.fillStyle = '#f1c40f';
+  ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
+  ctx.fillText(`当前难度：${diffLabel}`, W / 2, panelY + 110);
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '13px "Microsoft YaHei", sans-serif';
+  ctx.fillText('近战(1) | 远程(1.5) | 巨人(3) | 矿工(1)  —  键盘: 1/2/3/4 或 Q/W/E', W / 2, panelY + 140);
+
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = 'bold 15px "Microsoft YaHei", sans-serif';
+  const pulse = Math.sin(Date.now() / 600) * 0.3 + 0.7;
+  ctx.globalAlpha = pulse;
+  ctx.fillText('▼ 点击「开始游戏」▼', W / 2, panelY + 168);
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = 'left';
+}
+
+/** 绘制暂停画面 */
+function drawPauseOverlay() {
+  if (!paused || gameOver) return;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+
+  const panelW = 240;
+  const panelH = 100;
+  const panelX = W / 2 - panelW / 2;
+  const panelY = H / 2 - panelH / 2 - 10;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.strokeStyle = '#f39c12';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(panelX, panelY, panelW, panelH, 10);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#f39c12';
+  ctx.font = 'bold 26px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⏯ 游戏已暂停', W / 2, panelY + 42);
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '14px "Microsoft YaHei", sans-serif';
+  ctx.fillText('按 P 键或点击暂停按钮继续', W / 2, panelY + 72);
+
+  ctx.textAlign = 'left';
+}
+
+/** 绘制游戏结束画面 */
+function drawGameOver() {
+  if (!gameOver) return;
+
+  // 半透明遮罩
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, W, H);
+
+  // 结果面板
+  const panelW = 340;
+  const panelH = 140;
+  const panelX = W / 2 - panelW / 2;
+  const panelY = H / 2 - panelH / 2 - 20;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.strokeStyle = winner === '玩家' ? '#2ecc71' : '#e74c3c';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(panelX, panelY, panelW, panelH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // 标题
+  ctx.fillStyle = winner === '玩家' ? '#2ecc71' : '#e74c3c';
+  ctx.font = 'bold 28px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(winner === '玩家' ? '🎉 玩家获胜！' : '😞 人机获胜！', W / 2, panelY + 50);
+
+  // 副标题
+  ctx.fillStyle = '#ccc';
+  ctx.font = '15px "Microsoft YaHei", sans-serif';
+  const subText = winner === '玩家'
+    ? '恭喜！你成功摧毁了人机城堡！'
+    : '人机摧毁了你的城堡，再试一次吧！';
+  ctx.fillText(subText, W / 2, panelY + 85);
+
+  ctx.textAlign = 'left';
+}
+
+// ==================== 主渲染 ====================
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+  drawBattlefieldMarkers();
+  drawCastle(PLAYER_CASTLE_X, 'player');
+  drawCastle(AI_CASTLE_X, 'ai');
+  drawOre(PLAYER_ORE_X, ORE_Y);
+  drawOre(AI_ORE_X, ORE_Y);
+  drawAttackEffects();
+
+  // 按 y 坐标排序火柴人 (远处的先画)
+  const sorted = [...stickmen].sort((a, b) => a.y - b.y);
+  for (const s of sorted) drawStickman(s);
+
+  drawHUD();
+  drawStartScreen();
+  drawPauseOverlay();
+  drawGameOver();
+}
+
+// ==================== 游戏主循环 ====================
+function gameLoop(timestamp) {
+  if (lastTime === 0) lastTime = timestamp;
+  let dt = (timestamp - lastTime) / 1000;
+  if (dt > 0.1) dt = 0.1; // 防止大帧跳跃
+  lastTime = timestamp;
+
+  update(dt);
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+// ==================== 事件处理 ====================
+
+// 开始游戏
+btnStart.addEventListener('click', startGame);
+
+// 难度选择
+diffBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (gameStarted && !gameOver) {
+      if (!confirm('切换难度将重新开始游戏，确定吗？')) return;
+    }
+    diffBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
+    const cfg = DIFFICULTY[difficulty];
+    aiEnergyRegen = cfg.aiEnergyRegen;
+    aiSpawnMin = cfg.aiSpawnMin;
+    aiSpawnMax = cfg.aiSpawnMax;
+    resetGame();
+  });
+});
+
+// 暂停
+function togglePause() {
+  if (gameOver || !gameStarted) return;
+  paused = !paused;
+  if (paused) {
+    btnPause.textContent = '▶ 继续';
+    btnPause.classList.add('paused');
+    btnQuit.classList.add('show');
+    spawnBtns().forEach(b => b.classList.remove('show'));
+  } else {
+    btnPause.textContent = '⏯ 暂停';
+    btnPause.classList.remove('paused');
+    btnQuit.classList.remove('show');
+    spawnBtns().forEach(b => b.classList.add('show'));
+    lastTime = performance.now();
+  }
+}
+
+btnPause.addEventListener('click', togglePause);
+
+// 释放单位
+btnMelee.addEventListener('click', () => {
+  if (gameStarted && !gameOver && !paused && playerEnergy >= MELEE_COST) {
+    spawnStickman('player', 'melee');
+  }
+});
+
+btnRanged.addEventListener('click', () => {
+  if (gameStarted && !gameOver && !paused && playerEnergy >= RANGED_COST) {
+    spawnStickman('player', 'ranged');
+  }
+});
+
+btnGiant.addEventListener('click', () => {
+  if (gameStarted && !gameOver && !paused && playerEnergy >= GIANT_COST) {
+    spawnStickman('player', 'giant');
+  }
+});
+
+btnMiner.addEventListener('click', () => {
+  if (gameStarted && !gameOver && !paused && playerEnergy >= MINER_COST) {
+    spawnStickman('player', 'miner');
+  }
+});
+
+btnRestart.addEventListener('click', resetGame);
+
+btnQuit.addEventListener('click', () => {
+  if (paused) resetGame();
+});
+
+// 键盘快捷键
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'p' || e.key === 'P' || e.key === ' ') && gameStarted) {
+    e.preventDefault();
+    togglePause();
+    return;
+  }
+  if (e.key === 'Enter' && !gameStarted && !gameOver) {
+    e.preventDefault();
+    startGame();
+    return;
+  }
+  if (!paused && !gameOver && gameStarted) {
+    if (e.key === '1' || e.key === 'q') {
+      if (playerEnergy >= MELEE_COST) spawnStickman('player', 'melee');
+    } else if (e.key === '2' || e.key === 'w') {
+      if (playerEnergy >= RANGED_COST) spawnStickman('player', 'ranged');
+    } else if (e.key === '3' || e.key === 'e') {
+      if (playerEnergy >= GIANT_COST) spawnStickman('player', 'giant');
+    } else if (e.key === '4') {
+      if (playerEnergy >= MINER_COST) spawnStickman('player', 'miner');
+    }
+  }
+  if (e.key === 'r' && gameOver) {
+    resetGame();
+  }
+});
+
+// ==================== 启动游戏 ====================
+resetGame();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
